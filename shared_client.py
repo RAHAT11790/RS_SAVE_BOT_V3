@@ -2,24 +2,30 @@
 # Licensed under the GNU General Public License v3.0.  
 # See LICENSE file in the repository root for full license text.
 
+import asyncio
+import sys
 from telethon import TelegramClient
 from config import API_ID, API_HASH, BOT_TOKEN, STRING
 from pyrogram import Client
-import sys
-import asyncio
 
-# গ্লোবাল ভেরিয়েবল
+# Force event loop fix
+if sys.version_info >= (3, 10):
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
 client = TelegramClient("telethonbot", API_ID, API_HASH)
 app = Client("pyrogrambot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
-userbot = Client("4gbbot", api_id=API_ID, api_hash=API_HASH, session_string=STRING)
+userbot = Client("4gbbot", api_id=API_ID, api_hash=API_HASH, session_string=STRING) if STRING else None
 
 async def start_client():
-    """Start all clients"""
     if not client.is_connected():
         await client.start(bot_token=BOT_TOKEN)
         print("✅ Telethon client started...")
     
-    if STRING:
+    if STRING and userbot:
         try:
             await userbot.start()
             print("✅ Userbot started...")
@@ -31,27 +37,23 @@ async def start_client():
     return client, app, userbot
 
 async def stop_client():
-    """Gracefully stop all clients - FIXED VERSION"""
-    print("\n🛑 Stopping all clients gracefully...")
+    print("\n🛑 Stopping all clients...")
     
-    # 1. Stop Pyrogram first
     try:
-        if app and hasattr(app, 'is_connected') and app.is_connected:
+        if app and app.is_connected:
             await app.stop()
             print("✅ Pyrogram stopped")
     except Exception as e:
         print(f"⚠️ Pyrogram stop error: {e}")
     
-    # 2. Stop Userbot
-    if STRING:
+    if STRING and userbot:
         try:
-            if userbot and hasattr(userbot, 'is_connected') and userbot.is_connected:
+            if userbot.is_connected:
                 await userbot.stop()
                 print("✅ Userbot stopped")
         except Exception as e:
             print(f"⚠️ Userbot stop error: {e}")
     
-    # 3. Stop Telethon last (most important)
     try:
         if client and client.is_connected():
             await client.disconnect()
@@ -59,10 +61,4 @@ async def stop_client():
     except Exception as e:
         print(f"⚠️ Telethon stop error: {e}")
     
-    # 4. Force cancel all pending tasks
-    await asyncio.sleep(0.5)
-    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
-    for task in tasks:
-        task.cancel()
-    
-    print("✅ All clients stopped successfully!")
+    print("✅ All clients stopped!")
