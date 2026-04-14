@@ -8,6 +8,7 @@ import importlib
 import os
 import sys
 import signal
+import threading  # ✅ যোগ করুন
 
 async def load_and_run_plugins():
     """Load and run all plugins"""
@@ -59,7 +60,17 @@ def signal_handler(signum, frame):
     else:
         loop.run_until_complete(shutdown(signal_name))
 
+# ✅ Flask চালানোর ফাংশন যোগ করুন (নিচের অংশ)
+def run_flask():
+    """Flask app চালানোর জন্য আলাদা থ্রেড"""
+    os.system("python app.py")
+
 if __name__ == "__main__":
+    # ✅ Flask ব্যাকগ্রাউন্ডে চালান
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    print("🌐 Flask router started on port 10000")
+    
     # Register signal handlers
     signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
     signal.signal(signal.SIGTERM, signal_handler)  # Render shutdown
