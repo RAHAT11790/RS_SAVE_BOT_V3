@@ -6,6 +6,7 @@ from telethon import TelegramClient
 from config import API_ID, API_HASH, BOT_TOKEN, STRING
 from pyrogram import Client
 import sys
+import asyncio
 
 client = TelegramClient("telethonbot", API_ID, API_HASH)
 app = Client("pyrogrambot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
@@ -26,3 +27,34 @@ async def start_client():
     print("Pyro App Started...")
     return client, app, userbot
 
+# ✅ এই ফাংশনটি যোগ করুন (নিচের কোড)
+async def stop_client():
+    """Gracefully stop all clients"""
+    print("Stopping all clients...")
+    
+    # Stop Telethon client
+    try:
+        if client and client.is_connected():
+            await client.disconnect()
+            print("Telethon client stopped")
+    except Exception as e:
+        print(f"Error stopping Telethon client: {e}")
+    
+    # Stop Pyrogram app
+    try:
+        if app and app.is_connected:
+            await app.stop()
+            print("Pyrogram app stopped")
+    except Exception as e:
+        print(f"Error stopping Pyrogram app: {e}")
+    
+    # Stop Userbot
+    if STRING:
+        try:
+            if userbot and userbot.is_connected:
+                await userbot.stop()
+                print("Userbot stopped")
+        except Exception as e:
+            print(f"Error stopping userbot: {e}")
+    
+    print("All clients stopped successfully!")
