@@ -1,6 +1,4 @@
 # Copyright (c) 2025 devgagan : https://github.com/devgaganin.  
-# Licensed under the GNU General Public License v3.0.  
-# See LICENSE file in the repository root for full license text.
 
 import asyncio
 import sys
@@ -8,7 +6,7 @@ from telethon import TelegramClient
 from config import API_ID, API_HASH, BOT_TOKEN, STRING
 from pyrogram import Client
 
-# Force event loop fix
+# Fix event loop for pyrogram
 if sys.version_info >= (3, 10):
     try:
         asyncio.get_running_loop()
@@ -16,29 +14,33 @@ if sys.version_info >= (3, 10):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
+# Initialize clients
 client = TelegramClient("telethonbot", API_ID, API_HASH)
 app = Client("pyrogrambot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 userbot = Client("4gbbot", api_id=API_ID, api_hash=API_HASH, session_string=STRING) if STRING else None
 
 async def start_client():
+    """Start all clients"""
     if not client.is_connected():
         await client.start(bot_token=BOT_TOKEN)
-        print("✅ Telethon client started...")
+        print("✅ Telethon client started")
     
     if STRING and userbot:
         try:
             await userbot.start()
-            print("✅ Userbot started...")
+            print("✅ Userbot started")
         except Exception as e:
-            print(f"⚠️ Userbot start failed: {e}")
+            print(f"⚠️ Userbot error: {e}")
     
     await app.start()
-    print("✅ Pyrogram client started...")
+    print("✅ Pyrogram client started")
     return client, app, userbot
 
 async def stop_client():
+    """Stop all clients gracefully"""
     print("\n🛑 Stopping all clients...")
     
+    # Stop Pyrogram first
     try:
         if app and app.is_connected:
             await app.stop()
@@ -46,6 +48,7 @@ async def stop_client():
     except Exception as e:
         print(f"⚠️ Pyrogram stop error: {e}")
     
+    # Stop Userbot
     if STRING and userbot:
         try:
             if userbot.is_connected:
@@ -54,6 +57,7 @@ async def stop_client():
         except Exception as e:
             print(f"⚠️ Userbot stop error: {e}")
     
+    # Stop Telethon last
     try:
         if client and client.is_connected():
             await client.disconnect()
@@ -61,4 +65,4 @@ async def stop_client():
     except Exception as e:
         print(f"⚠️ Telethon stop error: {e}")
     
-    print("✅ All clients stopped!")
+    print("✅ All clients stopped")
