@@ -1,5 +1,4 @@
 # Copyright (c) 2025 devgagan : https://github.com/devgaganin.  
-# Licensed under the GNU General Public License v3.0.  
 
 import asyncio
 from shared_client import start_client, stop_client
@@ -12,7 +11,10 @@ import threading
 async def load_and_run_plugins():
     """Load and run all plugins"""
     print("🔄 Starting clients...")
-    await start_client()
+    result = await start_client()
+    if result[0] is None:
+        print("❌ Failed to start clients. Exiting...")
+        sys.exit(1)
     print("✅ Clients started successfully!")
     
     plugin_dir = "plugins"
@@ -32,62 +34,43 @@ async def load_and_run_plugins():
                 print(f"⚠️ Plugin {plugin} error: {e}")
 
 async def shutdown(signal_name=None):
-    """Graceful shutdown"""
-    print(f"\n⚠️ {signal_name or 'Shutdown'} signal received")
-    print("🛑 Initiating graceful shutdown...")
+    print(f"\n⚠️ {signal_name or 'Shutdown'} received")
     await stop_client()
-    print("✅ Shutdown complete")
     loop = asyncio.get_event_loop()
     loop.stop()
 
 async def main():
-    """Main function"""
     await load_and_run_plugins()
     print("🤖 Bot is running!")
     while True:
         await asyncio.sleep(5)
 
 def signal_handler(signum, frame):
-    """Handle shutdown signals"""
     signal_name = signal.Signals(signum).name
-    print(f"\n📡 Received signal: {signal_name}")
     asyncio.create_task(shutdown(signal_name))
 
 def run_flask():
-    """Run Flask app in separate thread"""
     os.system("python app.py")
 
 if __name__ == "__main__":
-    # Start Flask
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
-    print("🌐 Flask router started on port 10000")
+    print("🌐 Flask started on port 10000")
+    await asyncio.sleep(2)
     
-    # Wait for Flask to start
-    asyncio.run(asyncio.sleep(2))
-    
-    # Signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    # Event loop
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     
-    print("🚀 Starting SpyBot...")
+    print("🚀 Starting Bot...")
     print("=" * 40)
     
     try:
         loop.run_until_complete(main())
-    except KeyboardInterrupt:
-        print("\n👋 Keyboard interrupt received")
     except Exception as e:
-        print(f"❌ Fatal error: {e}")
+        print(f"❌ Error: {e}")
         sys.exit(1)
     finally:
-        try:
-            loop.run_until_complete(asyncio.sleep(0.5))
-            loop.close()
-            print("✅ Event loop closed")
-        except Exception as e:
-            print(f"⚠️ Cleanup error: {e}")
+        loop.close()
