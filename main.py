@@ -47,30 +47,51 @@ async def main():
 
 def signal_handler(signum, frame):
     signal_name = signal.Signals(signum).name
-    asyncio.create_task(shutdown(signal_name))
+    loop = asyncio.get_event_loop()
+    if loop.is_running():
+        asyncio.create_task(shutdown(signal_name))
+    else:
+        loop.run_until_complete(shutdown(signal_name))
 
 def run_flask():
     os.system("python app.py")
 
-if __name__ == "__main__":
+async def start_flask_and_bot():
+    """Start Flask and then the bot"""
+    # Start Flask in background
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
     print("🌐 Flask started on port 10000")
+    
+    # Give Flask time to start
     await asyncio.sleep(2)
     
+    # Register signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
+    # Run main bot
+    await main()
+
+if __name__ == "__main__":
     print("🚀 Starting Bot...")
     print("=" * 40)
     
+    # Create new event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
     try:
-        loop.run_until_complete(main())
+        loop.run_until_complete(start_flask_and_bot())
+    except KeyboardInterrupt:
+        print("\n👋 Keyboard interrupt received")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Fatal error: {e}")
         sys.exit(1)
     finally:
-        loop.close()
+        try:
+            loop.run_until_complete(asyncio.sleep(0.5))
+            loop.close()
+            print("✅ Event loop closed")
+        except Exception as e:
+            print(f"⚠️ Cleanup error: {e}")
