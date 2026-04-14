@@ -2,6 +2,7 @@
 
 import asyncio
 import sys
+from telethon import TelegramClient
 from pyrogram import Client
 from config import API_ID, API_HASH, BOT_TOKEN, STRING
 
@@ -13,19 +14,30 @@ if sys.version_info >= (3, 10):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-# শুধু Pyrogram ক্লায়েন্ট
+# ⚠️ গুরুত্বপূর্ণ: 'client' নামে Telethon ক্লায়েন্ট রাখতে হবে (প্লাগিনগুলো এটা চায়)
+client = TelegramClient("telethonbot", API_ID, API_HASH)
 app = Client("pyrogrambot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 userbot = Client("4gbbot", api_id=API_ID, api_hash=API_HASH, session_string=STRING) if STRING else None
 
 async def start_client():
-    """Start Pyrogram clients"""
+    """Start all clients"""
+    
+    # Start Telethon (প্লাগিনগুলোর জন্য দরকার)
+    try:
+        if not client.is_connected():
+            await client.start(bot_token=BOT_TOKEN)
+            print("✅ Telethon client started")
+    except Exception as e:
+        print(f"⚠️ Telethon error: {e}")
+    
+    # Start Pyrogram
     try:
         await app.start()
         print("✅ Pyrogram client started")
     except Exception as e:
-        print(f"❌ Pyrogram start error: {e}")
-        return None, None
+        print(f"⚠️ Pyrogram error: {e}")
     
+    # Start Userbot
     if STRING and userbot:
         try:
             await userbot.start()
@@ -33,10 +45,10 @@ async def start_client():
         except Exception as e:
             print(f"⚠️ Userbot error: {e}")
     
-    return app, userbot
+    return client, app, userbot
 
 async def stop_client():
-    """Stop clients gracefully"""
+    """Stop all clients"""
     print("\n🛑 Stopping clients...")
     
     if STRING and userbot:
@@ -44,12 +56,17 @@ async def stop_client():
             await userbot.stop()
             print("✅ Userbot stopped")
         except Exception as e:
-            print(f"⚠️ Userbot stop error: {e}")
+            pass
     
     try:
         await app.stop()
         print("✅ Pyrogram stopped")
     except Exception as e:
-        print(f"⚠️ Pyrogram stop error: {e}")
+        pass
     
-    print("✅ All clients stopped")
+    try:
+        if client and client.is_connected():
+            await client.disconnect()
+            print("✅ Telethon stopped")
+    except Exception as e:
+        passpass
