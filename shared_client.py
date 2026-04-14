@@ -14,7 +14,7 @@ if sys.version_info >= (3, 10):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-# ⚠️ গুরুত্বপূর্ণ: 'client' নামে Telethon ক্লায়েন্ট রাখতে হবে (প্লাগিনগুলো এটা চায়)
+# ক্লায়েন্ট - এখানে client নামে ভেরিয়েবল থাকতে হবে
 client = TelegramClient("telethonbot", API_ID, API_HASH)
 app = Client("pyrogrambot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 userbot = Client("4gbbot", api_id=API_ID, api_hash=API_HASH, session_string=STRING) if STRING else None
@@ -22,20 +22,20 @@ userbot = Client("4gbbot", api_id=API_ID, api_hash=API_HASH, session_string=STRI
 async def start_client():
     """Start all clients"""
     
-    # Start Telethon (প্লাগিনগুলোর জন্য দরকার)
+    # Start Telethon
     try:
         if not client.is_connected():
             await client.start(bot_token=BOT_TOKEN)
-            print("✅ Telethon client started")
+            print("✅ Telethon started")
     except Exception as e:
-        print(f"⚠️ Telethon error: {e}")
+        print(f"⚠️ Telethon: {e}")
     
     # Start Pyrogram
     try:
         await app.start()
-        print("✅ Pyrogram client started")
+        print("✅ Pyrogram started")
     except Exception as e:
-        print(f"⚠️ Pyrogram error: {e}")
+        print(f"⚠️ Pyrogram: {e}")
     
     # Start Userbot
     if STRING and userbot:
@@ -43,30 +43,32 @@ async def start_client():
             await userbot.start()
             print("✅ Userbot started")
         except Exception as e:
-            print(f"⚠️ Userbot error: {e}")
+            print(f"⚠️ Userbot: {e}")
     
     return client, app, userbot
 
 async def stop_client():
     """Stop all clients"""
-    print("\n🛑 Stopping clients...")
+    print("\n🛑 Stopping...")
     
     if STRING and userbot:
         try:
             await userbot.stop()
-            print("✅ Userbot stopped")
-        except Exception as e:
+        except:
             pass
     
     try:
         await app.stop()
-        print("✅ Pyrogram stopped")
-    except Exception as e:
+    except:
         pass
     
     try:
         if client and client.is_connected():
             await client.disconnect()
-            print("✅ Telethon stopped")
-    except Exception as e:
-        passpass
+    except:
+        pass
+    
+    print("✅ Stopped")
+
+# 🔥 এই লাইনগুলো গুরুত্বপূর্ণ - প্লাগিন যাতে ইম্পোর্ট করতে পারে
+__all__ = ['client', 'app', 'userbot', 'start_client', 'stop_client']
