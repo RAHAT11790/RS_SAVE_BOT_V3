@@ -9,12 +9,10 @@ motor
 pymongo
 pytz
 Pillow
-flask
-werkzeug==2.2.2
+flask==2.3.3
 mutagen
 yt-dlp
 requests
 cryptography
 pyrogram==2.0.106
 tgcrypto==1.2.5
-Flask==2.3.3
