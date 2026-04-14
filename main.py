@@ -8,18 +8,31 @@ import importlib
 import os
 import sys
 import signal
-import threading  # ✅ যোগ করুন
+import threading
+import shutil
 
 async def load_and_run_plugins():
     """Load and run all plugins"""
     await start_client()
     plugin_dir = "plugins"
     if os.path.exists(plugin_dir):
+        # 🔥 ক্যাশ পরিষ্কার করুন
+        for root, dirs, files in os.walk(plugin_dir):
+            if "__pycache__" in dirs:
+                pycache_path = os.path.join(root, "__pycache__")
+                shutil.rmtree(pycache_path, ignore_errors=True)
+                print(f"✅ Cleared cache: {pycache_path}")
+        
+        # শুধু .py ফাইল লোড করুন
         plugins = [f[:-3] for f in os.listdir(plugin_dir) 
-                  if f.endswith(".py") and f != "__init__.py"]
+                  if f.endswith(".py") and f != "__init__.py" and f != "pay.py"]
         
         for plugin in plugins:
             try:
+                # পুরনো মডিউল আনলোড করুন
+                if f"plugins.{plugin}" in sys.modules:
+                    del sys.modules[f"plugins.{plugin}"]
+                
                 module = importlib.import_module(f"plugins.{plugin}")
                 if hasattr(module, f"run_{plugin}_plugin"):
                     print(f"▶️ Running {plugin} plugin...")
@@ -32,10 +45,7 @@ async def shutdown(signal_name=None):
     print(f"\n⚠️ {signal_name or 'Shutdown'} signal received")
     print("🛑 Initiating graceful shutdown...")
     
-    # Stop all clients
     await stop_client()
-    
-    # Force stop event loop after cleanup
     loop = asyncio.get_event_loop()
     loop.stop()
 
@@ -43,8 +53,6 @@ async def main():
     """Main function"""
     await load_and_run_plugins()
     print("🤖 Bot is running...")
-    
-    # Keep running until stopped
     while True:
         await asyncio.sleep(1)
 
@@ -52,30 +60,26 @@ def signal_handler(signum, frame):
     """Handle shutdown signals"""
     signal_name = signal.Signals(signum).name
     print(f"\n📡 Received signal: {signal_name}")
-    
-    # Create task for shutdown
     loop = asyncio.get_event_loop()
     if loop.is_running():
         asyncio.create_task(shutdown(signal_name))
     else:
         loop.run_until_complete(shutdown(signal_name))
 
-# ✅ Flask চালানোর ফাংশন যোগ করুন (নিচের অংশ)
 def run_flask():
     """Flask app চালানোর জন্য আলাদা থ্রেড"""
     os.system("python app.py")
 
 if __name__ == "__main__":
-    # ✅ Flask ব্যাকগ্রাউন্ডে চালান
+    # Flask ব্যাকগ্রাউন্ডে চালান
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
     print("🌐 Flask router started on port 10000")
     
     # Register signal handlers
-    signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
-    signal.signal(signal.SIGTERM, signal_handler)  # Render shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     
-    # Create new event loop
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     
@@ -93,7 +97,6 @@ if __name__ == "__main__":
         sys.exit(1)
     finally:
         try:
-            # Final cleanup
             loop.run_until_complete(asyncio.sleep(0.3))
             loop.close()
             print("✅ Event loop closed successfully")
